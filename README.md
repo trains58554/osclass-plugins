@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 OSClass Plugins
 ==============
 
@@ -36,3 +37,9 @@ There is a branch for each plugin. So, each branch has the latest version. Here 
 - [Watchlist](https://github.com/osclass/osclass-plugins/tree/watchlist)
 
 If you need more information, you can visit [our forums](http://forums.osclass.org/).
+=======
+Cars attributes
+===============
+
+This plugin extends the fields of items to store cars attributes such as model, year, brand, color, accessories, and so on.
+>>>>>>> 06e98349b2369b02055e258ba394cf4563ff9643
