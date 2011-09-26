@@ -45,8 +45,8 @@
     <?php } ?>
     <?php if( !empty($detail['i_engine_size']) ) { ?>
     <tr>
-        <td width="150px"><label><?php _e('Engine size (cc)', 'cars_attributes'); ?></label></td>
-        <td width="150px"><?php echo @$detail['i_engine_size']; ?></td>
+        <td width="150px"><label><?php _e('Engine size ', 'cars_attributes'); ?></label></td>
+        <td width="150px"><?php echo @$detail['i_engine_size']; ?> <?php echo @$detail['e_engine_size_unit']; ?></td>
     </tr>
     <?php } ?>
     <?php if( !empty($detail['i_num_airbags']) ) { ?>

@@ -40,10 +40,11 @@
         
         // uniform()
         if (typeof $.uniform != 'undefined') {
-            $('#plugin-hook input:text, select#make, select#model, select#car_type, select#doors, select#seats, select#num_airbags, select#transmission, select#fuel, select#seller, select#power_unit, select#gears').uniform();
+            $('#plugin-hook input:text, select#make, select#model, select#car_type, select#doors, select#seats, select#engine_size_unit, select#num_airbags, select#transmission, select#fuel, select#seller, select#power_unit, select#gears').uniform();
         }
     });
 </script>
+
 <h2><?php _e('Cars attributes', 'cars_attributes') ; ?></h2>
 <div>
     <div class="row _200">
@@ -158,9 +159,16 @@
             if( Session::newInstance()->_getForm('pc_engine_size') != '' ) {
                 $detail['i_engine_size'] = Session::newInstance()->_getForm('pc_engine_size');
             }
+            if( Session::newInstance()->_getForm('pc_engine_size_unit') != '' ) {
+                $detail['e_engine_size_unit'] = Session::newInstance()->_getForm('pc_engine_size_unit');
+            }
         ?>
         <label><?php _e('Engine size (cc)', 'cars_attributes'); ?></label>
         <input type="text" name="engine_size" id="engine_size" value="<?php echo @$detail['i_engine_size']; ?>" />
+        <select name="engine_size_unit" id="engine_size_unit">
+            <option value="CC" <?php if(@$detail['e_engine_size_unit'] == 'CC') { echo 'selected'; } ?>><?php _e('CC', 'cars_attributes'); ?></option>
+            <option value="L" <?php if(@$detail['e_engine_size_unit'] == 'L') { echo 'selected'; } ?>><?php _e('L', 'cars_attributes'); ?></option>
+        </select>
     </div>
     <div class="row auto">
         <?php

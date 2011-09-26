@@ -3,7 +3,7 @@
 Plugin Name: Cars attributes
 Plugin URI: http://www.osclass.org/
 Description: This plugin extends a category of items to store cars attributes such as model, year, brand, color, accessories, and so on.
-Version: 2.1.2
+Version: 2.1.1
 Author: OSClass
 Author URI: http://www.osclass.org/
 Short Name: cars_plugin
@@ -121,6 +121,7 @@ Plugin update URI: http://www.osclass.org/files/plugins/cars_attributes/update.p
                 $models = $conn->osc_dbFetchResults('SELECT * FROM %st_item_car_model_attr WHERE `fk_i_make_id` = %d ORDER BY s_name ASC', DB_TABLE_PREFIX, Session::newInstance()->_getForm('pc_make') );
             }
             require_once 'item_edit.php';
+            Session::newInstance()->_clearVariables();
         }
     }
 
@@ -152,7 +153,7 @@ Plugin update URI: http://www.osclass.org/files/plugins/cars_attributes/update.p
             $model  = (Params::getParam("model") == '') ? DB_CONST_NULL : Params::getParam("model");
             $type   = (Params::getParam("car_type") == '') ? 1 : Params::getParam("car_type");
             // Insert the data in our plugin's table
-            $conn->osc_dbExec("INSERT INTO %st_item_car_attr (fk_i_item_id, i_year, i_doors, i_seats, i_mileage, i_engine_size, i_num_airbags, e_transmission, e_fuel, e_seller, b_warranty, b_new, i_power, e_power_unit, i_gears, fk_i_make_id, fk_i_model_id, fk_vehicle_type_id) VALUES (%d, %s, %d, %d, %s, %s, %d, '%s', '%s', '%s', %d, %d, %s, '%s', %d, %s, %s, %s)",
+            $conn->osc_dbExec("INSERT INTO %st_item_car_attr (fk_i_item_id, i_year, i_doors, i_seats, i_mileage, i_engine_size, e_engine_size_unit i_num_airbags, e_transmission, e_fuel, e_seller, b_warranty, b_new, i_power, e_power_unit, i_gears, fk_i_make_id, fk_i_model_id, fk_vehicle_type_id) VALUES (%d, %s, %d, %d, %s, %.1f, '%s', %d, '%s', '%s', '%s', %d, %d, %s, '%s', %d, %s, %s, %s)",
                                             DB_TABLE_PREFIX,
                                             $item_id,
                                             (Params::getParam("year") == '') ? DB_CONST_NULL : Params::getParam("year"),
@@ -160,6 +161,7 @@ Plugin update URI: http://www.osclass.org/files/plugins/cars_attributes/update.p
                                             Params::getParam("seats"),
                                             (Params::getParam("mileage") == '') ? DB_CONST_NULL : Params::getParam("mileage"),
                                             (Params::getParam("engine_size") == '') ? DB_CONST_NULL : Params::getParam("engine_size"),
+                                            Params::getParam("engine_size_unit"),
                                             Params::getParam("num_airbags"),
                                             Params::getParam("transmission"),
                                             Params::getParam("fuel"),
@@ -210,6 +212,7 @@ Plugin update URI: http://www.osclass.org/files/plugins/cars_attributes/update.p
             }
             unset($data);
             require_once 'item_edit.php';
+            Session::newInstance()->_clearVariables();
         }
     }
 
@@ -223,7 +226,7 @@ Plugin update URI: http://www.osclass.org/files/plugins/cars_attributes/update.p
         if(osc_is_this_category('cars_plugin', $catId)) {
             $conn = getConnection() ;
             // Insert the data in our plugin's table
-            $conn->osc_dbExec("REPLACE INTO %st_item_car_attr (fk_i_item_id, i_year, i_doors, i_seats, i_mileage, i_engine_size, i_num_airbags, e_transmission, e_fuel, e_seller, b_warranty, b_new, i_power, e_power_unit, i_gears, fk_i_make_id, fk_i_model_id, fk_vehicle_type_id) VALUES (%d, %s, %d, %d, %s, %s, %d, '%s', '%s', '%s', %d, %d, %s, '%s', %d, %s, %s, %d)",
+            $conn->osc_dbExec("REPLACE INTO %st_item_car_attr (fk_i_item_id, i_year, i_doors, i_seats, i_mileage, i_engine_size, e_engine_size_unit, i_num_airbags, e_transmission, e_fuel, e_seller, b_warranty, b_new, i_power, e_power_unit, i_gears, fk_i_make_id, fk_i_model_id, fk_vehicle_type_id) VALUES (%d, %s, %d, %d, %s, %.1f, '%s', %d, '%s', '%s', '%s', %d, %d, %s, '%s', %d, %s, %s, %d)",
                         DB_TABLE_PREFIX,
                         $item_id,
                         (Params::getParam("year") == '') ? DB_CONST_NULL : Params::getParam("year"),
@@ -231,6 +234,7 @@ Plugin update URI: http://www.osclass.org/files/plugins/cars_attributes/update.p
                         Params::getParam("seats"),
                         (Params::getParam("mileage") == '') ? DB_CONST_NULL : Params::getParam("mileage"),
                         (Params::getParam("engine_size") == '') ? DB_CONST_NULL : Params::getParam("engine_size"),
+                        Params::getParam("engine_size_unit"),
                         Params::getParam("num_airbags"),
                         Params::getParam("transmission"),
                         Params::getParam("fuel"),
@@ -281,6 +285,7 @@ Plugin update URI: http://www.osclass.org/files/plugins/cars_attributes/update.p
         Session::newInstance()->_setForm('pc_seats' ,Params::getParam("seats") );
         Session::newInstance()->_setForm('pc_mileage' ,Params::getParam("mileage") );
         Session::newInstance()->_setForm('pc_engine_size' ,Params::getParam("engine_size") );
+        Session::newInstance()->_setForm('pc_engine_size_unit' ,Params::getParam("engine_size_unit") );
         Session::newInstance()->_setForm('pc_num_airbags' ,Params::getParam("num_airbags") );
         Session::newInstance()->_setForm('pc_transmission' ,Params::getParam("transmission") );
         Session::newInstance()->_setForm('pc_fuel' ,Params::getParam("fuel") );
@@ -299,6 +304,29 @@ Plugin update URI: http://www.osclass.org/files/plugins/cars_attributes/update.p
         Session::newInstance()->_keepForm('pc_seats');
         Session::newInstance()->_keepForm('pc_mileage');
         Session::newInstance()->_keepForm('pc_engine_size');
+        Session::newInstance()->_keepForm('pc_engine_size_unit');
+        Session::newInstance()->_keepForm('pc_num_airbags');
+        Session::newInstance()->_keepForm('pc_transmission');
+        Session::newInstance()->_keepForm('pc_fuel');
+        Session::newInstance()->_keepForm('pc_seller');
+        Session::newInstance()->_keepForm('pc_warranty');
+        Session::newInstance()->_keepForm('pc_new');
+        Session::newInstance()->_keepForm('pc_power');
+        Session::newInstance()->_keepForm('pc_power_unit');
+        Session::newInstance()->_keepForm('pc_gears');
+        Session::newInstance()->_keepForm('pc_make');
+        Session::newInstance()->_keepForm('pc_model');
+        Session::newInstance()->_keepForm('pc_car_type');
+    }
+
+    function save_inputs_into_session() {
+        // keep values on session
+        Session::newInstance()->_keepForm('pc_year');
+        Session::newInstance()->_keepForm('pc_doors');
+        Session::newInstance()->_keepForm('pc_seats');
+        Session::newInstance()->_keepForm('pc_mileage');
+        Session::newInstance()->_keepForm('pc_engine_size');
+        Session::newInstance()->_keepForm('pc_engine_size_unit');
         Session::newInstance()->_keepForm('pc_num_airbags');
         Session::newInstance()->_keepForm('pc_transmission');
         Session::newInstance()->_keepForm('pc_fuel');
@@ -348,4 +376,7 @@ Plugin update URI: http://www.osclass.org/files/plugins/cars_attributes/update.p
 
     // previous to insert item
     osc_add_hook('pre_item_post', 'cars_pre_item_post') ;
+    // save input values into session
+    osc_add_hook('save_input_session', 'save_inputs_into_session' );
+    
 ?>
