@@ -18,14 +18,21 @@
      *      You should have received a copy of the GNU Affero General Public
      * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
      */
-
+ require_once osc_plugins_path() . osc_plugin_folder(__FILE__) . 'S3.php';
+ 
     if(Params::getParam('plugin_action')=='done') {
         osc_set_preference('bucket', Params::getParam('bucket'), 'amazons3', 'STRING');
+        if(Params::getParam('bucket') != osc_get_preference('bucket', 'amazons3')) {
+           $region = sss_region_url(Params::getParam('bucket'));
+           osc_set_preference('server_url', $region, 'amazons3', 'STRING');
+        }
         osc_set_preference('access_key', Params::getParam('access_key'), 'amazons3', 'STRING');
         osc_set_preference('secret_key', Params::getParam('secret_key'), 'amazons3', 'STRING');
         echo '<div style="text-align:center; font-size:22px; background-color:#00bb00;"><p>' . __('Congratulations. The plugin is now configured', 'amazons3') . '.</p></div>' ;
         osc_reset_preferences();
     }
+    $s3 = sss_ad(); 
+    $buckets = $s3->listBuckets();
 ?>
 <div id="settings_form" style="border: 1px solid #ccc; background: #eee; ">
     <div style="padding: 20px;">
@@ -37,28 +44,39 @@
                     <input type="hidden" name="page" value="plugins" />
                     <input type="hidden" name="action" value="renderplugin" />
                     <input type="hidden" name="file" value="<?php echo osc_plugin_folder(__FILE__); ?>conf.php" />
-                    <input type="hidden" name="plugin_action" value="done" />
-                        <label for="bucket"><?php _e('Name of the bucket (it should be a worldwide-unique name)', 'amazons3'); ?></label>
-                        <br/>
-                        <input type="text" name="bucket" id="bucket" value="<?php echo osc_get_preference('bucket', 'amazons3'); ?>"/>
-                        <br/>
+                    <input type="hidden" name="plugin_action" value="done" />  
+                        <br />
+                        <?php _e("You need an Amazon S3 account. More information available here http://aws.amazon.com/s3/",'amazons3k'); ?>
+                        <br />
+                        <br />                      
                         <label for="access_key"><?php _e('Access key', 'amazons3'); ?></label>
-                        <br/>
+                        <br />
                         <input type="text" name="access_key" id="access_key" value="<?php echo osc_get_preference('access_key', 'amazons3'); ?>"/>
-                        <br/>
+                        <br />
                         <label for="secret_key"><?php _e('Secret key', 'amazons3'); ?></label>
-                        <br/>
+                        <br />
                         <input type="text" name="secret_key" id="secret_key" value="<?php echo osc_get_preference('secret_key', 'amazons3'); ?>"/>
-                        <br/>
-                        <?php _e("You need an Amazon S3 account. More information on http://aws.amazon.com/s3/",'amazons3k'); ?>
-                        <br/>
-                        <span style="float:right;"><button type="submit" style="float: right;"><?php _e('Update', 'amazons3');?></button></span>
+                        <br />                        
+                        <?php if(osc_get_preference('access_key', 'amazons3') != '' && osc_get_preference('secret_key', 'amazons3') !=''){ ?>
+                        <?php if($buckets != ''){ ?>
+                        <label for="bucket"><?php _e('Select a bucket', 'amazons3'); ?>:</label>
+                        <br />
+                        <select name="bucket" id="bucket">
+                        <?php foreach($buckets as $bucket){ ?>
+                           <option value="<?php echo $bucket; ?>" <?php if(osc_get_preference('bucket', 'amazons3') == $bucket){ echo 'selected'; }?>><?php echo $bucket; ?></option>
+                        <?php } ?>
+                        </select>
+                        <br />
+                        <?php }else { echo '<br />' . __('You have to add a bucket to your account.','amazons3') . '<br />' . __('If a bucket exist in your account check you keys above.','amazons3');; } ?>
+                        <?php }?>
+                        <br />
+                        <span style="float:left;"><button type="submit" style="float: right;"><?php _e('Update', 'amazons3');?></button></span>
                     </div>
-                    <br/>
+                    <br />
                     <div style="clear:both;"></div>
                 </form>
             </fieldset>
         </div>
-        <div style="clear: both;"></div>
+        <div style="clear: both;"></div>										
     </div>
 </div>

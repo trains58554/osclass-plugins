@@ -4,17 +4,49 @@ Plugin Name: Amazon S3
 Plugin URI: http://www.osclass.org/
 Description: This plugin allows you to upload users' images to Amazon S3 service
 Version: 1.0
-Author: OSClass
+Author: OSClass, JChapman
 Author URI: http://www.osclass.org/
 Short Name: amazons3
 */
 
 
     // load necessary functions
-    require_once osc_plugins_path() . osc_plugin_folder(__FILE__) . 'S3.php';
+    
 
+    function sss_ad() {
+       require_once osc_plugins_path() . osc_plugin_folder(__FILE__) . 'S3.php';
+       
+       $adapter = new S3(osc_get_preference('access_key', 'amazons3'), osc_get_preference('secret_key', 'amazons3'), false, osc_get_preference('server_url', 'amazons3'));
+       return $adapter;
+    }
+    
+    function sss_region_url($bucketName) {
+       $s3 = sss_ad();
+       $buckets = @$s3->listBuckets();
+		if (is_array($buckets) && in_array($bucketName, $buckets)) {
+		    $bucket_location = $s3->getBucketLocation($bucketName);
+		    switch ($bucket_location) {
+		        case 'US':       		$e = 's3'; break;
+		        case 'us-west-2':       $e = 's3-us-west-2'; break;
+		        case 'us-west-1':       $e = 's3-us-west-1'; break;
+		        case 'EU':              $e = 's3-eu-west-1'; break;
+		        case 'eu-west-1':       $e = 's3-eu-west-1'; break;
+		        case 'ap-southeast-1':  $e = 's3-ap-southeast-1'; break;
+		        case 'ap-northeast-1':  $e = 's3-ap-northeast-1'; break;
+		        case 'sa-east-1':       $e = 's3-sa-east-1'; break;
+		        default: 				return null;
+		    }
+		    $e .= '.amazonaws.com';
+		    return $e;
+		    } else {
+		     return 's3.amazonaws.com';  
+		    }
+		    
+    }
+    
     function amazon_install() {
         $conn = getConnection();
+        osc_set_preference('server_url', 's3.amazonaws.com', 'amazons3', 'STRING');
         osc_set_preference('bucket', '', 'amazons3', 'STRING');
         osc_set_preference('access_key', '', 'amazons3', 'STRING');
         osc_set_preference('secret_key', '', 'amazons3', 'STRING');
@@ -22,45 +54,46 @@ Short Name: amazons3
     }
 
     function amazon_uninstall() {
+        osc_delete_preference('server_url', 'amazons3');
         osc_delete_preference('bucket', 'amazons3');
         osc_delete_preference('access_key', 'amazons3');
         osc_delete_preference('secret_key', 'amazons3');
     }
     
     function amazon_upload($resource) {
-        $s3 = new S3(osc_get_preference('access_key', 'amazons3'), osc_get_preference('secret_key', 'amazons3'));
-        $s3->putBucket(osc_get_preference('bucket', 'amazons3'), S3::ACL_PUBLIC_READ);
+        $s3 = sss_ad();        
         if(osc_keep_original_image()) {
-            $s3->putObjectFile(osc_content_path() . 'uploads/' . $resource['pk_i_id'] . '_original.jpg', osc_get_preference('bucket', 'amazons3'), $resource['pk_i_id'] . '_original.jpg', S3::ACL_PUBLIC_READ);
-        }
-        $s3->putObjectFile(osc_content_path() . 'uploads/' . $resource['pk_i_id'] . '.jpg', osc_get_preference('bucket', 'amazons3'), $resource['pk_i_id'] . '.jpg', S3::ACL_PUBLIC_READ);
-        $s3->putObjectFile(osc_content_path() . 'uploads/' . $resource['pk_i_id'] . '_preview.jpg', osc_get_preference('bucket', 'amazons3'), $resource['pk_i_id'] . '_preview.jpg', S3::ACL_PUBLIC_READ);
-        $s3->putObjectFile(osc_content_path() . 'uploads/' . $resource['pk_i_id'] . '_thumbnail.jpg', osc_get_preference('bucket', 'amazons3'), $resource['pk_i_id'] . '_thumbnail.jpg', S3::ACL_PUBLIC_READ);
+            $s3->putObjectFile(osc_content_path() . 'uploads/' . $resource['pk_i_id'] . '_original.jpg', osc_get_preference('bucket', 'amazons3'), 'oc_uploads/' . $resource['pk_i_id'] . '_original.jpg', S3::ACL_PUBLIC_READ);
+        }        
+        $s3->putObjectFile(osc_content_path() . 'uploads/' . $resource['pk_i_id'] . '.jpg', osc_get_preference('bucket', 'amazons3'), 'oc_uploads/' . $resource['pk_i_id'] . '.jpg', S3::ACL_PUBLIC_READ);
+        $s3->putObjectFile(osc_content_path() . 'uploads/' . $resource['pk_i_id'] . '_preview.jpg', osc_get_preference('bucket', 'amazons3'), 'oc_uploads/' . $resource['pk_i_id'] . '_preview.jpg', S3::ACL_PUBLIC_READ);
+        $s3->putObjectFile(osc_content_path() . 'uploads/' . $resource['pk_i_id'] . '_thumbnail.jpg', osc_get_preference('bucket', 'amazons3'), 'oc_uploads/' . $resource['pk_i_id'] . '_thumbnail.jpg', S3::ACL_PUBLIC_READ);
         amazon_unlink_resource($resource);
     }
     
-    function amazon_resource_path($path) {
-        return "http://". osc_get_preference('bucket', 'amazons3') .".s3.amazonaws.com/" . str_replace(osc_base_url().osc_resource_field("s_path"), '', $path);
+    function amazon_resource_path($path) {        
+        return "http://" .  osc_get_preference('bucket', 'amazons3') . '.' . osc_get_preference('server_url', 'amazons3') . '/' . str_replace(osc_base_url().osc_resource_field("s_path"), '', 'oc_uploads/' . $path);
     }
     
     function amazon_regenerate_image($resource) {
-        $s3 = new S3(osc_get_preference('access_key', 'amazons3'), osc_get_preference('secret_key', 'amazons3'));
+        $s3 = sss_ad();
+        
         $path = $resource['pk_i_id']. "_original.jpg";
-        $img = @$s3->getObject(osc_get_preference('bucket','amazons3'), $path);
+        $img = @$s3->getObject(osc_get_preference('bucket','amazons3'), 'oc_uploads/' . $path);
         if(!$img) {
             $path = $resource['pk_i_id']. ".jpg";
-            $img = @$s3->getObject(osc_get_preference('bucket','amazons3'), $path);
+            $img = @$s3->getObject(osc_get_preference('bucket','amazons3'), 'oc_uploads/' . $path);
         }
         if(!$img) {
             $path = $resource['pk_i_id']. "_thumbnail.jpg";
-            $img = @$s3->getObject(osc_get_preference('bucket','amazons3'), $path);
+            $img = @$s3->getObject(osc_get_preference('bucket','amazons3'), 'oc_uploads/' . $path);
         }
         if($img) {
-            $s3->getObject(osc_get_preference('bucket','amazons3'), $path, osc_content_path() . 'uploads/' . $resource['pk_i_id'] . ".jpg");
-            @$s3->deleteObject(osc_get_preference('bucket','amazons3'), $resource['pk_i_id']. "_original.jpg");
-            @$s3->deleteObject(osc_get_preference('bucket','amazons3'), $resource['pk_i_id']. ".jpg");
-            @$s3->deleteObject(osc_get_preference('bucket','amazons3'), $resource['pk_i_id']. "_preview.jpg");
-            @$s3->deleteObject(osc_get_preference('bucket','amazons3'), $resource['pk_i_id']. "_thumbnail.jpg");
+            @$s3->getObject(osc_get_preference('bucket','amazons3'), 'oc_uploads/' . $path, osc_content_path() . 'uploads/' . $resource['pk_i_id'] . "_orginal.jpg");
+            @$s3->deleteObject(osc_get_preference('bucket','amazons3'), 'oc_uploads/' . $resource['pk_i_id']. "_original.jpg");
+            @$s3->deleteObject(osc_get_preference('bucket','amazons3'), 'oc_uploads/' . $resource['pk_i_id']. ".jpg");
+            @$s3->deleteObject(osc_get_preference('bucket','amazons3'), 'oc_uploads/' . $resource['pk_i_id']. "_preview.jpg");
+            @$s3->deleteObject(osc_get_preference('bucket','amazons3'), 'oc_uploads/' . $resource['pk_i_id']. "_thumbnail.jpg");
         }
     }
     
@@ -72,19 +105,27 @@ Short Name: amazons3
     }
     
     function amazon_delete_from_bucket($resource) {
-        $s3 = new S3(osc_get_preference('access_key', 'amazons3'), osc_get_preference('secret_key', 'amazons3'));
-        @$s3->deleteObject(osc_get_preference('bucket','amazons3'), $resource['pk_i_id']. "_original.jpg");
-        @$s3->deleteObject(osc_get_preference('bucket','amazons3'), $resource['pk_i_id']. ".jpg");
-        @$s3->deleteObject(osc_get_preference('bucket','amazons3'), $resource['pk_i_id']. "_preview.jpg");
-        @$s3->deleteObject(osc_get_preference('bucket','amazons3'), $resource['pk_i_id']. "_thumbnail.jpg");
+        $s3 = sss_ad();
+        
+        @$s3->deleteObject(osc_get_preference('bucket','amazons3'), 'oc_uploads/' . $resource['pk_i_id']. "_original.jpg");
+        @$s3->deleteObject(osc_get_preference('bucket','amazons3'), 'oc_uploads/' . $resource['pk_i_id']. ".jpg");
+        @$s3->deleteObject(osc_get_preference('bucket','amazons3'), 'oc_uploads/' . $resource['pk_i_id']. "_preview.jpg");
+        @$s3->deleteObject(osc_get_preference('bucket','amazons3'), 'oc_uploads/' . $resource['pk_i_id']. "_thumbnail.jpg");
     }
     
 
     function amazon_admin_menu() {
-        echo '<h3><a href="#">Amazon S3</a></h3>
-        <ul> 
-            <li><a href="' . osc_admin_render_plugin_url(osc_plugin_folder(__FILE__) . 'conf.php') . '">&raquo; ' . __('Settings', 'amazon') . '</a></li>
-        </ul>';
+       if( OSCLASS_VERSION < '2.4.0') {
+           echo '<h3><a href="#">Amazon S3</a></h3>
+           <ul> 
+               <li><a href="' . osc_admin_render_plugin_url(osc_plugin_folder(__FILE__) . 'conf.php') . '">&raquo; ' . __('Settings', 'amazon') . '</a></li>
+           </ul>';
+        } else {
+           echo '<li id="amazons3"><h3><a href="#">Amazon S3</a></h3>
+           <ul> 
+               <li><a href="' . osc_admin_render_plugin_url(osc_plugin_folder(__FILE__) . 'conf.php') . '">&raquo; ' . __('Settings', 'amazon') . '</a></li>
+           </ul></li>';
+        }
     }
     
     function amazon_redirect_to($url) {
